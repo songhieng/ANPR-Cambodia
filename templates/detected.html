@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geolocation and Firebase Display</title>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-app.js"></script>
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-database.js"></script>
+    <!-- Firebase Storage -->
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-storage.js"></script>
+
+
+
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+
+    <link rel="stylesheet"
+        href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css"
+        type="text/css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/css/flag-icons.min.css" />
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            padding: 20px;
+            background-color: #f7f9fc;
+        }
+        
+        /* Style for the input field */
+                #data {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border 0.3s ease;
+        }
+
+        #data:focus {
+            border-color: #3a86ff;
+            outline: none;
+        }
+
+        #map {
+            margin-top: 20px;
+            position: relative;
+            width: 100%;
+            height: 700px;
+            border: 2px solid #cccccc;
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            background-color: #2d87f0;
+            color: #fff;
+        }
+
+        button:hover {
+            background-color: #1e64d1;
+        }
+
+        p {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        #head1 {
+            font-family: 'Arial', sans-serif;
+            background-color: #f3f4f6;
+            padding: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2d87f0;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        h6 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #666;
+            margin-top: 20px;
+        }
+
+
+        body::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Safari, Edge */
+        }
+
+        body {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        #userData {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px; /* spacing between grid items */
+    padding: 20px;
+}
+
+/* Styles for each user entry */
+.user {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Style for the license plate text */
+.user p {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* Styles for the images */
+.user img {
+    max-width: 100%;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 10px;
+}
+
+#usersDetectedData {
+        font-family: 'Arial', sans-serif;
+        padding: 20px 10px;  /* Reduced horizontal padding */
+        border-radius: 8px;
+        background-color: #f7f9fc;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        max-width: 80%;     /* Adjusted to take 80% of parent width */
+        margin: 20px auto;  /* Keeps the container centered */
+    }
+
+    .userItem {
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        background-color: #ffffff;
+    }
+
+    .userItem:last-child {
+        margin-bottom: 0;  /* Removes margin from the last item */
+    }
+
+    #imagesContainer {
+    display: none;
+}
+
+    </style>
+</head>
+
+<body>
+
+    <div class="head1">
+        <span class="fi fi-kh" style="height: 50px; width: 50px; margin: 0px; padding:0px"></span>
+        <h3>Cambodian Automatic Number Plate Recoginition</h3>
+        <h6>Detected Dispatch Center</h6>
+    </div>
+    <button onclick="getLocation()">Get Location</button>
+    <p id="locationData">Location data will appear here...</p>
+
+    <form onsubmit="return writeDataToFirebase();" action="javascript:void(0);" method="post">
+        <!-- Text input -->
+        <input type="text" id="data" name="data" placeholder="Enter The Targeted">
+        <!-- Button -->
+        <button type="submit">Submit</button>
+    </form>
+
+    <p id="flaggedDetails">Firebase data will appear here...</p>
+    <div id="map"></div>
+
+    <div id="userData">
+    </div>
+
+    <div id="imagesContainer"></div>
+    <button onclick="toggleData('imagesContainer')">Show/Hide Images</button>
+    
+    <button onclick="toggleData('usersDetectedData')">Show/Hide Users Data</button>
+    <div id="usersDetectedData"></div>
+    
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwcg6jP6zuqzdyo8vXJFp3vLc8xWEeFvY",
+            authDomain: "anpr-5a023.firebaseapp.com",
+            databaseURL: "https://anpr-5a023-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "anpr-5a023",
+            storageBucket: "anpr-5a023.appspot.com",
+            messagingSenderId: "345044990316",
+            appId: "1:345044990316:web:6df59ec38da2b603145b49",
+            measurementId: "G-M177D7SBVV"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        // Fetch and Display Data from Firebase Realtime Database
+        var database = firebase.database();
+
+        var flaggedDetailsRef = database.ref('flagged_details');
+        flaggedDetailsRef.on('value', function (snapshot) {
+            const data = snapshot.val();
+            let content = '<table style="width:100%; border-collapse: collapse;">';
+            content += `<thead><tr>
+                  <th style="border: 1px solid #ddd; padding: 8px;">ID</th>
+                  <th style="border: 1px solid #ddd; padding: 8px;">Name</th>
+                  <th style="border: 1px solid #ddd; padding: 8px;">Age</th>
+                  <th style="border: 1px solid #ddd; padding: 8px;">Address</th>
+                  <th style="border: 1px solid #ddd; padding: 8px;">Crime Commited</th>
+                  <th style="border: 1px solid #ddd; padding: 8px;">KH ID</th>
+                  <th style="border: 1px solid #ddd; padding: 8px;">License Plate</th>
+                </tr></thead><tbody>`;
+
+            for (const key in data) {
+                if (data.hasOwnProperty(key)) {
+                    content += `<tr>
+                          <td style="border: 1px solid #ddd; padding: 8px;">${key}</td>
+                          <td style="border: 1px solid #ddd; padding: 8px;">${data[key].Name}</td>
+                          <td style="border: 1px solid #ddd; padding: 8px;">${data[key].Age}</td>
+                          <td style="border: 1px solid #ddd; padding: 8px;">${data[key].Address}</td>
+                          <td style="border: 1px solid #ddd; padding: 8px;">${data[key].Crime_Commited}</td>
+                          <td style="border: 1px solid #ddd; padding: 8px;">${data[key].KH_ID}</td>
+                          <td style="border: 1px solid #ddd; padding: 8px;">${data[key].License_Plate}</td>
+                        </tr>`;
+                }
+            }
+            content += '</tbody></table>';
+            document.getElementById('flaggedDetails').innerHTML = content;
+        });
+
+        // Get Location and use Reverse Geocoding
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else {
+                document.getElementById("locationData").innerHTML = "Geolocation is not supported by this browser.";
+            }
+        }
+
+        function showPosition(position) {
+            let lat = position.coords.latitude;
+            let lng = position.coords.longitude;
+            let content = `<strong>Latitude:</strong> ${lat} <br><strong>Longitude:</strong> ${lng} <br>`;
+
+            // Using Google Maps Reverse Geocoding
+            let apiKey = 'AIzaSyBwcg6jP6zuqzdyo8vXJFp3vLc8xWEeFvY'; // Replace with your Google Cloud API Key
+            let endpoint = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+            fetch(endpoint)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        content += `<strong>Address:</strong> ${data.results[0].formatted_address} <br>`;
+                        document.getElementById("locationData").innerHTML = content;
+                    } else {
+                        document.getElementById("locationData").innerHTML = content + "Couldn't retrieve specific location.";
+                    }
+                })
+                .catch(error => {
+                    document.getElementById("locationData").innerHTML = content + "Error retrieving location: " + error.message;
+                });
+        }
+
+        function showError(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    document.getElementById("locationData").innerHTML = "User denied the request for Geolocation.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    document.getElementById("locationData").innerHTML = "Location information is unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    document.getElementById("locationData").innerHTML = "The request to get user location timed out.";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    document.getElementById("locationData").innerHTML = "An unknown error occurred.";
+                    break;
+            }
+        }
+    </script>
+
+    <script>
+
+        function writeDataToFirebase() {
+            // Retrieve the value from the input field
+            var dataValue = document.getElementById('data').value;
+
+            if (!dataValue) {
+                alert("Please enter some data.");
+                return false; // prevent form submission
+            }
+
+            // Compare the entered data with the database
+            
+
+            var listRef = database.ref('flagged/');
+            var newRef = listRef.push();
+            newRef.set({
+                'License_Plate': dataValue,
+            }, error => {
+                if (error) {
+                    console.error("Data could not be saved:", error);
+                } else {
+                    console.log("Data saved successfully!");
+                }
+            });
+
+            // Clear the input field after submitting
+            document.getElementById('data').value = '';
+            // Return false to prevent the default form submission
+            return false;
+        }
+        
+
+        function compareData(inputData) {
+                    var fetchedData = database.ref('/users_database');
+
+                    fetchedData.once('value', (snapshot) => {
+                        var data = snapshot.val();
+                        let displayMatchedData = "";
+
+                        for (var key in data) {
+                            var value = data[key];
+                            if (value.License_Plate === inputData) {
+                                displayMatchedData = `
+                        <div class="matchedUser">
+                            <h2>User ID: ${key}</h2>
+                            <p>Name: ${value.Name}</p>
+                            <p>Age: ${value.Age}</p>
+                            <p>KH-ID: ${value.KH_ID}</p>
+                            <p>License-Plate: ${value.License_Plate}</p>
+                            <p>Crime-Commited: ${value.Crime_Commited}</p>
+                        </div>
+                    `;
+                            }
+                        }
+
+                        const compareDataDiv = document.getElementById('compareData');
+                        if (displayMatchedData) {
+                            compareDataDiv.innerHTML = displayMatchedData;
+                        } else {
+                            compareDataDiv.innerText = 'No match found.';
+                        }
+                    });
+                }
+            
+
+
+
+
+var fetchedData = database.ref('/users_detected');
+var storageRef = firebase.storage().ref();
+
+fetchedData.on('value', async (snapshot) => {
+    var data = snapshot.val();
+    let displayData = "";
+
+    let promises = [];
+
+    for (var key in data) {
+        var value = data[key];
+
+        // Construct the image names using data from Realtime Database
+        var carImageName = "car_" + value.license_plate + '.jpg';
+        var plateImageName = "plate_" + value.license_plate + '.jpg';
+
+        var carImageRef = storageRef.child('detected_cars/' + carImageName);
+        var plateImageRef = storageRef.child('detected_plates/' + plateImageName);
+
+        let promise = Promise.all([
+            carImageRef.getDownloadURL(),
+            plateImageRef.getDownloadURL()
+        ]).then(([carUrl, plateUrl]) => {
+            displayData += `
+                <div class="user">
+                    <p>License-Plate: ${value.license_plate}</p>
+                    <img src="${carUrl}" alt="Car Image for ${value.license_plate}" width="300">
+                    <img src="${plateUrl}" alt="Plate Image for ${value.license_plate}" width="300">
+                </div>
+            `;
+        }).catch((error) => {
+            console.error("Error fetching files:", error);
+        });
+
+        promises.push(promise);
+    }
+
+    // When all promises are completed, update the innerHTML
+    await Promise.all(promises);
+    document.getElementById('userData').innerHTML = displayData;
+});
+
+
+
+
+var usersDetectedRef = firebase.database().ref('users_detected/');
+
+usersDetectedRef.on('value', function(snapshot) {
+    var data = snapshot.val();
+    var displayContent = ""; 
+
+    for (var key in data) {
+        if (data.hasOwnProperty(key)) {
+            displayContent += "<div class='userItem'>";
+            displayContent += "<strong>License Plate:</strong> " + data[key].license_plate + "<br>";
+            displayContent += "<strong>Timestamp:</strong> " + data[key].timestamp + "<br>";
+            displayContent += "</div><hr>";  // Using <hr> for a simple visual separation
+        }
+    }
+    // Insert the constructed HTML string into the 'usersDetectedData' div
+    document.getElementById('usersDetectedData').innerHTML = displayContent;
+});
+
+
+function toggleData(elementId) {
+    const element = document.getElementById(elementId);
+    if(element.style.display === "none" || element.style.display === "") {
+        element.style.display = "block";
+    } else {
+        element.style.display = "none";
+    }
+}
+
+
+</script>
+    <script
+        src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+    <link rel="stylesheet"
+        href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css"
+        type="text/css">
+
+    <script>
+        mapboxgl.accessToken =
+            "pk.eyJ1Ijoic29uZ2hlaW5nIiwiYSI6ImNsbjVwbjFwczBkODkybW1ucmxpc2R1aWcifQ.pi21WUBnSFWNt0CmHSnvDw"
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [-79.4512, 43.6568],
+            zoom: 8
+        });
+
+        /* Given a query in the form "lng, lat" or "lat, lng"
+        * returns the matching geographic coordinate(s)
+        * as search results in carmen geojson format,
+        * https://github.com/mapbox/carmen/blob/master/carmen-geojson.md */
+        const coordinatesGeocoder = function (query) {
+            // Match anything which looks like
+            // decimal degrees coordinate pair.
+            const matches = query.match(
+                /^[ ]*(?:Lat: )?(-?\d+\.?\d*)[, ]+(?:Lng: )?(-?\d+\.?\d*)[ ]*$/i
+            );
+            if (!matches) {
+                return null;
+            }
+
+            function coordinateFeature(lng, lat) {
+                return {
+                    center: [lng, lat],
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [lng, lat]
+                    },
+                    place_name: 'Lat: ' + lat + ' Lng: ' + lng,
+                    place_type: ['coordinate'],
+                    properties: {},
+                    type: 'Feature'
+                };
+            }
+
+            const coord1 = Number(matches[1]);
+            const coord2 = Number(matches[2]);
+            const geocodes = [];
+
+            if (coord1 < -90 || coord1 > 90) {
+                // must be lng, lat
+                geocodes.push(coordinateFeature(coord1, coord2));
+            }
+
+            if (coord2 < -90 || coord2 > 90) {
+                // must be lat, lng
+                geocodes.push(coordinateFeature(coord2, coord1));
+            }
+
+            if (geocodes.length === 0) {
+                // else could be either lng, lat or lat, lng
+                geocodes.push(coordinateFeature(coord1, coord2));
+                geocodes.push(coordinateFeature(coord2, coord1));
+            }
+
+            return geocodes;
+        };
+
+        // Add the control to the map.
+        map.addControl(
+            new MapboxGeocoder({
+                accessToken: mapboxgl.accessToken,
+                localGeocoder: coordinatesGeocoder,
+                zoom: 4,
+                placeholder: 'Try: -40, 170',
+                mapboxgl: mapboxgl,
+                reverseGeocode: true
+            })
+        );
+    </script>
+
+</body>
+
+</html>

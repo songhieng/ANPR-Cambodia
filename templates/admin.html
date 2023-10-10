@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Realtime Database - Create Operation</title>
+    <!-- Firebase App (Compat) and Realtime Database (Compat) JavaScript SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-database.js"></script>
+
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/css/flag-icons.min.css" />
+
+    <style>
+        body {
+            margin: 20px;
+            padding: 0;
+        }
+
+        #map {
+            position: relative;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+            height: 800px;
+            border: 2px solid #cccccc;
+            /* Optional border */
+            border-radius: 8px;
+            /* Optional rounded corners */
+        }
+    </style>
+
+
+    <style>
+        #compareData {
+            border: 2px solid #0077b6;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #e8f4f8;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        #compareData .matchedUser {
+            font-weight: bold;
+            color: #ff4646;
+        }
+
+        #userData {
+            border: 2px solid #3a86ff;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #edf2f7;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        #userData .user {
+            padding: 10px;
+            border-bottom: 1px solid #d1d5db;
+        }
+
+        #userData .user:last-child {
+            border-bottom: none;
+            /* Remove border for the last user entry */
+        }
+
+        #userData .user h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            /* Remove default top margin for cleaner spacing */
+        }
+
+        #userData .user p {
+            margin-bottom: 10px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: #f6f8fa;
+        }
+
+        /* Style for the input field */
+        #data {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border 0.3s ease;
+        }
+
+        #data:focus {
+            border-color: #3a86ff;
+            outline: none;
+        }
+
+        /* Style for the submit button */
+        button {
+            padding: 10px 20px;
+            background-color: #3a86ff;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #295cb5;
+        }
+
+        h4 {
+            font-family: 'Arial', sans-serif;
+            /* Font family */
+            font-size: 24px;
+            /* Font size */
+            font-weight: bold;
+            /* Font weight */
+            color: #3A3A3A;
+            /* Font color */
+            background-color: #EDEDED;
+            /* Background color */
+            padding: 10px 20px;
+            /* Padding */
+            border-radius: 8px;
+            /* Rounded corners */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            /* Box shadow */
+            text-align: center;
+            /* Center the text */
+        }
+
+        body::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Safari, Edge */
+        }
+
+        body {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        #showDataBtn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #3a86ff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: background-color 0.3s ease;
+        }
+
+        #showDataBtn:hover {
+            background-color: #295cb5;
+        }
+
+        #userData {
+            display: none;
+            /* Initially hidden */
+        }
+
+        #showDataBtn.show {
+            background-color: #4CAF50;
+            /* Green background */
+        }
+
+        #showDataBtn.hide {
+            background-color: #ff4646;
+            /* Red background */
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Form remains unchanged -->
+    <form onsubmit="return writeDataToFirebase();" action="javascript:void(0);" method </style>
+
+        </head>
+
+        <body>
+
+
+            <span class="fi fi-kh" style="height: 50px; width: 50px; margin: 0px; padding-left:350px"></span>
+            <h4>ANPR - Data Center</h4>
+
+            <form onsubmit="return writeDataToFirebase();" action="javascript:void(0);" method="post">
+                <!-- Text input -->
+                <input type="text" id="data" name="data" placeholder="Enter The Targeted">
+                <!-- Button -->
+                <button type="submit">Submit</button>
+            </form>
+
+
+            <div id="compareData"></div>
+            <div id="map"></div>
+            <div id="userData"></div>
+            <button id="showDataBtn" onclick="displayData()">Show Data</button>
+            <script>
+                const firebaseConfig = {
+                    apiKey: "AIzaSyBwcg6jP6zuqzdyo8vXJFp3vLc8xWEeFvY",
+                    authDomain: "anpr-5a023.firebaseapp.com",
+                    databaseURL: "https://anpr-5a023-default-rtdb.asia-southeast1.firebasedatabase.app",
+                    projectId: "anpr-5a023",
+                    storageBucket: "anpr-5a023.appspot.com",
+                    messagingSenderId: "345044990316",
+                    appId: "1:345044990316:web:6df59ec38da2b603145b49",
+                    measurementId: "G-M177D7SBVV"
+                };
+ 
+                firebase.initializeApp(firebaseConfig);
+                const database = firebase.database();
+
+                function compareData(inputData) {
+                    var fetchedData = database.ref('/users_database');
+
+                    fetchedData.once('value', (snapshot) => {
+                        var data = snapshot.val();
+                        let displayMatchedData = "";
+
+                        for (var key in data) {
+                            var value = data[key];
+                            if (value.License_Plate === inputData) {
+                                displayMatchedData = `
+                        <div class="matchedUser">
+                            <h2>User ID: ${key}</h2>
+                            <p>Name: ${value.Name}</p>
+                            <p>Age: ${value.Age}</p>
+                            <p>KH-ID: ${value.KH_ID}</p>
+                            <p>License-Plate: ${value.License_Plate}</p>
+                            <p>Crime-Commited: ${value.Crime_Commited}</p>
+                        </div>
+                    `;
+                                break;  // break the loop once a match is found
+                            }
+                        }
+
+                        const compareDataDiv = document.getElementById('compareData');
+                        if (displayMatchedData) {
+                            compareDataDiv.innerHTML = displayMatchedData;
+                        } else {
+                            compareDataDiv.innerText = 'No match found.';
+                        }
+                    });
+                }
+
+                function writeDataToFirebase() {
+                    // Retrieve the value from the input field
+                    var dataValue = document.getElementById('data').value;
+
+                    if (!dataValue) {
+                        alert("Please enter some data.");
+                        return false; // prevent form submission
+                    }
+
+                    // Compare the entered data with the database
+                    compareData(dataValue);
+
+                    var listRef = database.ref('users/');
+                    var newRef = listRef.push();
+
+                    newRef.set({
+                        'License_Plate': dataValue,
+                    }, error => {
+                        if (error) {
+                            console.error("Data could not be saved:", error);
+                        } else {
+                            console.log("Data saved successfully!");
+                        }
+                    });
+
+                    // Clear the input field after submitting
+                    document.getElementById('data').value = '';
+                    // Return false to prevent the default form submission
+                    return false;
+                }
+
+                var fetchedData = database.ref('/users_database');
+                fetchedData.on('value', (snapshot) => {
+                    var data = snapshot.val();
+                    let displayData = "";
+
+                    for (var key in data) {
+                        var value = data[key];
+                        displayData += `
+                    <div class="user">
+                        <h2>User ID: ${key}</h2>
+                        <p>Name: ${value.Name}</p>
+                        <p>Age: ${value.Age}</p>
+                        <p>KH-ID: ${value.KH_ID}</p>
+                        <p>License-Plate: ${value.License_Plate}</p>
+                        <p>Crime-Commited: ${value.Crime_Commited}</p>
+                    </div>
+                `;
+                    }
+
+                    // Displaying the constructed HTML string in the 'userData' div
+                    document.getElementById('userData').innerHTML = displayData;
+                });
+
+                
+                function displayData() {
+                    const userDataElement = document.getElementById('userData');
+                    const btn = document.getElementById('showDataBtn');
+
+                    // Check if userData is already displayed. If so, hide it. Otherwise, display it.
+                    if (userDataElement.style.display === 'block') {
+                        userDataElement.style.display = 'none';
+                        btn.innerText = "Show Data"; // Change button text back to 'Show Data'
+                        btn.classList.remove('hide'); // Remove the 'hide' class (red color)
+                        btn.classList.add('show');    // Add the 'show' class (green color)
+                    } else {
+                        userDataElement.style.display = 'block';
+                        btn.innerText = "Hide Data";  // Change button text to 'Hide Data'
+                        btn.classList.remove('show'); // Remove the 'show' class (green color)
+                        btn.classList.add('hide');    // Add the 'hide' class (red color)
+                    }
+                }
+
+
+
+            </script>
+
+
+
+
+
+
+
+            <script
+                src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+            <link rel="stylesheet"
+                href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css"
+                type="text/css">
+
+            <script>
+                mapboxgl.accessToken =
+                    "pk.eyJ1Ijoic29uZ2hlaW5nIiwiYSI6ImNsbjVwbjFwczBkODkybW1ucmxpc2R1aWcifQ.pi21WUBnSFWNt0CmHSnvDw"
+
+                const map = new mapboxgl.Map({
+                    container: 'map',
+                    // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+                    style: 'mapbox://styles/mapbox/streets-v12',
+                    center: [-79.4512, 43.6568],
+                    zoom: 8
+                });
+
+                /* Given a query in the form "lng, lat" or "lat, lng"
+                * returns the matching geographic coordinate(s)
+                * as search results in carmen geojson format,
+                * https://github.com/mapbox/carmen/blob/master/carmen-geojson.md */
+                const coordinatesGeocoder = function (query) {
+                    // Match anything which looks like
+                    // decimal degrees coordinate pair.
+                    const matches = query.match(
+                        /^[ ]*(?:Lat: )?(-?\d+\.?\d*)[, ]+(?:Lng: )?(-?\d+\.?\d*)[ ]*$/i
+                    );
+                    if (!matches) {
+                        return null;
+                    }
+
+                    function coordinateFeature(lng, lat) {
+                        return {
+                            center: [lng, lat],
+                            geometry: {
+                                type: 'Point',
+                                coordinates: [lng, lat]
+                            },
+                            place_name: 'Lat: ' + lat + ' Lng: ' + lng,
+                            place_type: ['coordinate'],
+                            properties: {},
+                            type: 'Feature'
+                        };
+                    }
+
+                    const coord1 = Number(matches[1]);
+                    const coord2 = Number(matches[2]);
+                    const geocodes = [];
+
+                    if (coord1 < -90 || coord1 > 90) {
+                        // must be lng, lat
+                        geocodes.push(coordinateFeature(coord1, coord2));
+                    }
+
+                    if (coord2 < -90 || coord2 > 90) {
+                        // must be lat, lng
+                        geocodes.push(coordinateFeature(coord2, coord1));
+                    }
+
+                    if (geocodes.length === 0) {
+                        // else could be either lng, lat or lat, lng
+                        geocodes.push(coordinateFeature(coord1, coord2));
+                        geocodes.push(coordinateFeature(coord2, coord1));
+                    }
+
+                    return geocodes;
+                };
+
+                // Add the control to the map.
+                map.addControl(
+                    new MapboxGeocoder({
+                        accessToken: mapboxgl.accessToken,
+                        localGeocoder: coordinatesGeocoder,
+                        zoom: 4,
+                        placeholder: 'Try: -40, 170',
+                        mapboxgl: mapboxgl,
+                        reverseGeocode: true
+                    })
+                );
+            </script>
+
+
+
+
+
+        </body>
+
+</html>
